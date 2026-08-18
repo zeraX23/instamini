@@ -44,6 +44,7 @@
             margin-top: 15px; 
             text-align: center; 
             font-weight: bold; 
+            word-wrap: break-word;
         }
         .error { color: #ed4956; }
         .success { color: #28a745; }
@@ -80,6 +81,16 @@
         <p id="statusMessage"></p>
     </div>
 
+    <!-- Penangkap Error Global untuk kemudahan Debug di HP -->
+    <script>
+        window.addEventListener('error', function(event) {
+            const statusEl = document.getElementById('statusMessage');
+            if(statusEl) {
+                statusEl.textContent = "Sistem Error: " + event.message;
+                statusEl.className = "error";
+            }
+        });
+    </script>
     <script src="app.js"></script>
 </body>
 </html>
