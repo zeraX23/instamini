@@ -1,6 +1,6 @@
 // 1. Inisialisasi Kredensial (Sudah menggunakan kunci asli Anda)
 const SUPABASE_URL = 'https://ofmnqhaazuxygixnqvwy.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_dtluHFwETC7g43v8l_oCmQ_-31nzYPg';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mbW5xaGFhenV4eWdpeG5xdnd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwNjQ3MDgsImV4cCI6MjEwMjY0MDcwOH0.DDRceiPhOBMr4IbY-ifJ7Erh3G03bERKVgjVyXM70Fs;
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
