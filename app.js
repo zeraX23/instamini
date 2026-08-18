@@ -1,6 +1,6 @@
-// 1. Inisialisasi Kredensial (Sudah menggunakan kunci asli Anda)
+// 1. Inisialisasi Kredensial
 const SUPABASE_URL = 'https://ofmnqhaazuxygixnqvwy.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mbW5xaGFhenV4eWdpeG5xdnd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwNjQ3MDgsImV4cCI6MjEwMjY0MDcwOH0.DDRceiPhOBMr4IbY-ifJ7Erh3G03bERKVgjVyXM70Fs;
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mbW5xaGFhenV4eWdpeG5xdnd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwNjQ3MDgsImV4cCI6MjEwMjY0MDcwOH0.DDRceiPhOBMr4IbY-ifJ7Erh3G03bERKVgjVyXM70Fs';
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -26,22 +26,26 @@ async function loginAtauDaftar() {
     }
 
     loginBtn.disabled = true;
-    showStatus("Memproses autentikasi...", "info");
+    showStatus("Memproses...", "info");
 
     try {
-        // Coba Login
+        // Coba Login terlebih dahulu
         let { data, error } = await supabase.auth.signInWithPassword({ email, password });
         
-        // Deteksi jika user belum terdaftar, lakukan Pendaftaran (Sign Up) otomatis
-        if (error && error.message.includes("Invalid login credentials")) {
+        // Jika gagal login, langsung coba daftarkan sebagai akun baru
+        if (error) {
             showStatus("Mendaftarkan akun baru...", "info");
-            const signUpResponse = await supabase.auth.signUp({ email, password });
+            const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ 
+                email, 
+                password 
+            });
             
-            if (signUpResponse.error) throw signUpResponse.error;
-            data = signUpResponse.data;
-        } else if (error) {
-            // Lempar error jika gagal karena hal lain
-            throw error;
+            if (signUpError) throw signUpError;
+            
+            // Peringatan jika fitur Confirm Email masih aktif di Supabase
+            if (signUpData.user && !signUpData.session) {
+                return showStatus("Pendaftaran berhasil! Cek email Anda untuk konfirmasi.", "info");
+            }
         }
 
         // Sukses
@@ -67,7 +71,7 @@ async function prosesUpload() {
     }
 
     const file = fileInput.files[0];
-    const ekstensi = file.name.split('.').pop();
+    const ekstensi = file.name.split('.').pop().toLowerCase();
     const namaFileUnik = `${Date.now()}-${Math.random().toString(36).substring(2)}.${ekstensi}`;
 
     uploadBtn.disabled = true;
