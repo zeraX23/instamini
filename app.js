@@ -1,95 +1,106 @@
-// 1. Inisialisasi Supabase Client
-// GANTI TEKS DI BAWAH DENGAN URL DAN KEY DARI DASHBOARD SUPABASE ANDA
-const SUPABASE_URL = 'https://xyzabcdefgh.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1...'; 
+// 1. Inisialisasi Kredensial (Sudah menggunakan kunci asli Anda)
+const SUPABASE_URL = 'https://ofmnqhaazuxygixnqvwy.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_dtluHFwETC7g43v8l_oCmQ_-31nzYPg';
 
-// Menggunakan modul supabase dari CDN yang dipanggil di HTML
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Utilitas untuk menampilkan pesan ke user
+// 2. Deklarasi Elemen DOM
 const uiStatus = document.getElementById('statusMessage');
-function showStatus(pesan, isError = false) {
+const loginBtn = document.getElementById('loginBtn');
+const uploadBtn = document.getElementById('uploadBtn');
+
+// Fungsi Utilitas Penampil Status
+function showStatus(pesan, tipe = 'info') {
     uiStatus.textContent = pesan;
-    uiStatus.className = isError ? 'error' : 'success';
+    uiStatus.className = tipe;
 }
 
-// 2. Fungsi Login/Daftar (Wajib karena RLS)
+// 3. Logika Autentikasi
 async function loginAtauDaftar() {
-    const email = document.getElementById('emailInput').value;
+    const email = document.getElementById('emailInput').value.trim();
     const password = document.getElementById('passwordInput').value;
     
-    showStatus("Memproses autentikasi...");
+    // Validasi Input Kosong
+    if (!email || !password) {
+        return showStatus("Email dan password tidak boleh kosong!", "error");
+    }
+
+    loginBtn.disabled = true;
+    showStatus("Memproses autentikasi...", "info");
 
     try {
-        // Coba login terlebih dahulu
+        // Coba Login
         let { data, error } = await supabase.auth.signInWithPassword({ email, password });
         
-        // Jika gagal login karena user tidak ada, otomatis daftarkan
+        // Deteksi jika user belum terdaftar, lakukan Pendaftaran (Sign Up) otomatis
         if (error && error.message.includes("Invalid login credentials")) {
-            showStatus("User tidak ditemukan, mendaftarkan akun baru...");
+            showStatus("Mendaftarkan akun baru...", "info");
             const signUpResponse = await supabase.auth.signUp({ email, password });
+            
+            if (signUpResponse.error) throw signUpResponse.error;
             data = signUpResponse.data;
-            error = signUpResponse.error;
+        } else if (error) {
+            // Lempar error jika gagal karena hal lain
+            throw error;
         }
 
-        if (error) throw error;
-
-        // Jika berhasil
-        showStatus("Berhasil login! Silakan unggah foto.");
+        // Sukses
+        showStatus("Berhasil masuk! Silakan pilih foto.", "success");
         document.getElementById('loginSection').style.display = 'none';
         document.getElementById('uploadSection').style.display = 'block';
 
     } catch (err) {
-        showStatus(`Gagal Autentikasi: ${err.message}`, true);
+        showStatus(`Gagal: ${err.message}`, "error");
+    } finally {
+        loginBtn.disabled = false;
     }
 }
 
-// 3. Fungsi Utama: Proses Upload Gambar & Simpan Data
+// 4. Logika Pemrosesan & Unggah Data
 async function prosesUpload() {
     const fileInput = document.getElementById('imageInput');
-    const captionInput = document.getElementById('captionInput').value;
-    const btn = document.getElementById('uploadBtn');
+    const captionInput = document.getElementById('captionInput').value.trim();
 
-    // Validasi input
+    // Validasi File
     if (fileInput.files.length === 0) {
-        return showStatus("Harap pilih gambar terlebih dahulu!", true);
+        return showStatus("Harap pilih gambar terlebih dahulu!", "error");
     }
 
     const file = fileInput.files[0];
     const ekstensi = file.name.split('.').pop();
-    // Membuat nama file acak agar tidak bentrok (misal: 169283746-gambar.jpg)
     const namaFileUnik = `${Date.now()}-${Math.random().toString(36).substring(2)}.${ekstensi}`;
 
-    try {
-        btn.disabled = true; // Matikan tombol agar tidak di-klik ganda
-        showStatus("Tahap 1: Mengunggah gambar ke server...");
+    uploadBtn.disabled = true;
 
-        // Tahap 1: Unggah gambar ke Supabase Storage (Bucket: post_images)
-        const { data: storageData, error: storageError } = await supabase
+    try {
+        showStatus("Mengunggah gambar ke server...", "info");
+
+        // Proses Unggah ke Bucket Supabase
+        const { error: storageError } = await supabase
             .storage
             .from('post_images')
             .upload(`public/${namaFileUnik}`, file, {
                 cacheControl: '3600',
-                upsert: false // Jangan timpa file jika nama sama
+                upsert: false
             });
 
         if (storageError) throw storageError;
 
-        showStatus("Tahap 2: Mendapatkan URL publik...");
+        showStatus("Menyimpan data postingan...", "info");
 
-        // Tahap 2: Dapatkan URL publik dari gambar yang baru diunggah
+        // Ambil URL Publik
         const { data: publicUrlData } = supabase
             .storage
             .from('post_images')
             .getPublicUrl(`public/${namaFileUnik}`);
         
         const imageUrl = publicUrlData.publicUrl;
-
-        showStatus("Tahap 3: Menyimpan ke database...");
-
-        // Tahap 3: Ambil ID user yang sedang login, dan simpan ke database (tabel posts)
-        const { data: userData } = await supabase.auth.getUser();
         
+        // Ambil ID User yang sedang aktif
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError) throw userError;
+
+        // Injeksi Baris Data Baru ke Tabel 'posts'
         const { error: dbError } = await supabase
             .from('posts')
             .insert([
@@ -102,16 +113,15 @@ async function prosesUpload() {
 
         if (dbError) throw dbError;
 
-        showStatus("Selesai! Postingan berhasil dipublikasikan.", false);
-        
-        // Bersihkan formulir
+        // Bersihkan Formulir jika sukses
+        showStatus("Selesai! Postingan berhasil dipublikasikan.", "success");
         fileInput.value = '';
         document.getElementById('captionInput').value = '';
 
     } catch (err) {
-        console.error("Terjadi kesalahan:", err);
-        showStatus(`Gagal: ${err.message}`, true);
+        console.error("Terjadi kesalahan sistem:", err);
+        showStatus(`Gagal: ${err.message}`, "error");
     } finally {
-        btn.disabled = false; // Nyalakan tombol kembali
+        uploadBtn.disabled = false;
     }
 }
