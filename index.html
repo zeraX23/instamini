@@ -3,43 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload PWA - Supabase</title>
+    <title>Instamini - PWA</title>
     <!-- Memuat Supabase Library v2 langsung dari CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: sans-serif; max-width: 400px; margin: 20px auto; padding: 20px; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            max-width: 400px; 
+            margin: 20px auto; 
+            padding: 20px; 
+            background-color: #fafafa; 
+        }
+        .container { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+        }
+        h2 { text-align: center; color: #333; margin-bottom: 20px; }
         .form-group { margin-bottom: 15px; }
-        input, textarea, button { width: 100%; padding: 10px; box-sizing: border-box; }
-        #statusMessage { font-size: 0.9em; margin-top: 10px; color: blue; }
-        .error { color: red !important; }
-        .success { color: green !important; }
+        input, textarea, button { 
+            width: 100%; 
+            padding: 10px; 
+            box-sizing: border-box; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            margin-top: 5px; 
+        }
+        button { 
+            background-color: #0095f6; 
+            color: white; 
+            border: none; 
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-top: 10px; 
+        }
+        button:disabled { background-color: #b2dffc; cursor: not-allowed; }
+        #statusMessage { 
+            font-size: 0.9em; 
+            margin-top: 15px; 
+            text-align: center; 
+            font-weight: bold; 
+        }
+        .error { color: #ed4956; }
+        .success { color: #28a745; }
+        .info { color: #0095f6; }
     </style>
 </head>
 <body>
+    <div class="container">
+        <h2>Instamini</h2>
+        
+        <!-- Area Autentikasi -->
+        <div id="loginSection">
+            <div class="form-group">
+                <input type="email" id="emailInput" placeholder="Masukkan Email">
+            </div>
+            <div class="form-group">
+                <input type="password" id="passwordInput" placeholder="Password (Minimal 6 Karakter)">
+            </div>
+            <button onclick="loginAtauDaftar()" id="loginBtn">Masuk / Daftar</button>
+        </div>
 
-    <h2>Buat Postingan Baru</h2>
-    
-    <!-- Formulir Login Darurat (Karena tabel kita dilindungi RLS, harus login dulu) -->
-    <div class="form-group" id="loginSection">
-        <input type="email" id="emailInput" placeholder="Email untuk Login/Daftar">
-        <input type="password" id="passwordInput" placeholder="Password">
-        <button onclick="loginAtauDaftar()">Login / Daftar</button>
+        <!-- Area Unggah Konten (Awalnya Disembunyikan) -->
+        <div id="uploadSection" style="display: none;">
+            <div class="form-group">
+                <input type="file" id="imageInput" accept="image/png, image/jpeg, image/webp">
+            </div>
+            <div class="form-group">
+                <textarea id="captionInput" placeholder="Tulis caption untuk foto ini..." rows="3"></textarea>
+            </div>
+            <button onclick="prosesUpload()" id="uploadBtn">Bagikan Foto</button>
+        </div>
+
+        <!-- Indikator Proses -->
+        <p id="statusMessage"></p>
     </div>
 
-    <!-- Formulir Upload (Awalnya disembunyikan sampai user login) -->
-    <div id="uploadSection" style="display: none;">
-        <div class="form-group">
-            <input type="file" id="imageInput" accept="image/png, image/jpeg, image/webp">
-        </div>
-        <div class="form-group">
-            <textarea id="captionInput" placeholder="Tulis caption Anda..." rows="3"></textarea>
-        </div>
-        <button onclick="prosesUpload()" id="uploadBtn">Unggah Foto</button>
-    </div>
-
-    <p id="statusMessage"></p>
-
-    <!-- Memuat file logika kita -->
     <script src="app.js"></script>
 </body>
 </html>
